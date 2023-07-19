@@ -38,5 +38,8 @@ public class MTDData {
         }
         columns.put(columnName, columnValue);
     }
+    public String getValueFromMap(String columnName) {
+        return columns.get(columnName);
+    }
 }
 
