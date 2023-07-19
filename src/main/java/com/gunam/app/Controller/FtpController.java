@@ -4,6 +4,8 @@ import org.apache.commons.net.ftp.FTP;
 import org.apache.commons.net.ftp.FTPClient;
 import org.apache.commons.net.ftp.FTPFile;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.annotation.EnableScheduling;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import javax.annotation.PostConstruct;
 import java.io.FileOutputStream;
@@ -13,6 +15,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 @Component
+@EnableScheduling
 public class FtpController {
 
     private String remoteFileName;
@@ -98,4 +101,66 @@ public class FtpController {
             e.printStackTrace();
         }
     }
+    @Scheduled(cron = "0 5 15 * * *") // Runs at midnight (00:00) every day
+    public void downloadFileAtMidnight() {
+
+        String server = "144.122.31.54";
+        int port = 21;
+        String username = "data_admin";
+        String password = "da_xrd3200";
+
+        getNextDay("01012016");
+
+        String remoteFilePath = "/" + remoteDirectory + "/" + remoteFileName;
+        System.out.println(remoteFilePath);
+        String localFilePath = "ftp-downloads/" + remoteFileName;
+
+        try {
+            // Connect to the FTP server and login
+            ftpClient.connect(server, port);
+            ftpClient.login(username, password);
+            ftpClient.enterLocalPassiveMode();
+            ftpClient.setFileType(FTP.BINARY_FILE_TYPE);
+
+            Path localPath = Paths.get(localFilePath);
+            Files.createDirectories(localPath.getParent());
+
+            FileOutputStream outputStream = new FileOutputStream(localFilePath);
+            boolean success = ftpClient.retrieveFile(remoteFilePath, outputStream);
+            outputStream.close();
+
+            if (success) {
+                System.out.println("File downloaded successfully.");
+            } else {
+                System.out.println("File download failed.");
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            // Disconnect from the FTP server
+            try {
+                ftpClient.disconnect();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
+    }
+
+    public void getNextDay(String str) {
+        this.remoteFileName = "mt" + str + ".mtd";
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
 }
