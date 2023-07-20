@@ -35,7 +35,7 @@ public class DataInsertion {
         boolean tableExist = isTableExists();
 
         if (!tableExist) {
-            String createTableQuery = "CREATE TABLE mt_table (" + columnNames[0] + " VARCHAR(255) DEFAULT 'Default'";
+            String createTableQuery = "CREATE TABLE mtd_table (" + columnNames[0] + " VARCHAR(255) DEFAULT 'Default'";
             // Dynamically generate the CREATE TABLE query
             for (int i = 0; i < columnNames.length; i++) {
                 if (i == 0) {
@@ -56,7 +56,7 @@ public class DataInsertion {
             for (String columnName : columnNames) {
                 if (!existingColumns.contains(columnName)) {
                     System.out.println(columnName);
-                    String updateTableQuery =  "ALTER TABLE mt_table ADD " + columnName + " VARCHAR(255) DEFAULT 'Default';";
+                    String updateTableQuery =  "ALTER TABLE mtd_table ADD " + columnName + " VARCHAR(255) DEFAULT 'Default';";
                     existingColumns.add(columnName);
                     jdbcTemplate.execute(updateTableQuery);
                 }
@@ -89,7 +89,7 @@ public class DataInsertion {
     }
 
     private String generateInsertQuery(String[] columnNames) {
-        StringBuilder insertQuery = new StringBuilder("INSERT INTO mt_table (");
+        StringBuilder insertQuery = new StringBuilder("INSERT INTO mtd_table (");
 
         // Append column names
         for (int i = 0; i < columnLen; i++) {
@@ -119,7 +119,7 @@ public class DataInsertion {
 
     public boolean isTableExists() {
         String sql = "SELECT EXISTS (SELECT 1 FROM pg_catalog.pg_tables WHERE tablename = ?)";
-        return jdbcTemplate.queryForObject(sql, Boolean.class, "mt_table");
+        return jdbcTemplate.queryForObject(sql, Boolean.class, "mtd_table");
     }
 
     public String reverseStr(String str) {
