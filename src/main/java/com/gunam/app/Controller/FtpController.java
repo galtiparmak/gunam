@@ -13,11 +13,13 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 
 @Component
 @EnableScheduling
 public class FtpController {
-
+    private final String DOWNLOAD_FOLDER = "ftp-downloads/";
     private String remoteFileName;
     private String remoteDirectory;
     MTDFileController mtdFile;
@@ -63,7 +65,7 @@ public class FtpController {
                     this.remoteFileName = file.getName();
                     System.out.println(remoteFileName);
                     downloadFile();
-                    mtdFile.createAndInsertData("ftp-downloads/" + remoteFileName);
+                    mtdFile.createAndInsertData(DOWNLOAD_FOLDER + remoteFileName);
                 }
             }
         } catch (IOException e) {
@@ -82,7 +84,7 @@ public class FtpController {
 
         String remoteFilePath = "/" + remoteDirectory + "/" + remoteFileName;
         System.out.println(remoteFilePath);
-        String localFilePath = "ftp-downloads/" + remoteFileName;
+        String localFilePath = DOWNLOAD_FOLDER + remoteFileName;
         try {
 
             Path localPath = Paths.get(localFilePath);
@@ -101,7 +103,7 @@ public class FtpController {
             e.printStackTrace();
         }
     }
-    @Scheduled(cron = "0 5 15 * * *") // Runs at midnight (00:00) every day
+    @Scheduled(cron = "0 0 00 * * *") // Runs at midnight (00:00) every day
     public void downloadFileAtMidnight() {
 
         String server = "144.122.31.54";
@@ -109,11 +111,12 @@ public class FtpController {
         String username = "data_admin";
         String password = "da_xrd3200";
 
-        getNextDay("01012016");
+        //this.remoteFileName = getYesterdaysDate();
+        this.remoteFileName = "mt01012016.mtd";
 
         String remoteFilePath = "/" + remoteDirectory + "/" + remoteFileName;
-        System.out.println(remoteFilePath);
-        String localFilePath = "ftp-downloads/" + remoteFileName;
+        System.out.println("File path yesterday: " + remoteFilePath);
+        String localFilePath = DOWNLOAD_FOLDER + remoteFileName;
 
         try {
             // Connect to the FTP server and login
@@ -131,9 +134,15 @@ public class FtpController {
 
             if (success) {
                 System.out.println("File downloaded successfully.");
+                mtdFile.createAndInsertData(DOWNLOAD_FOLDER + remoteFileName);
             } else {
                 System.out.println("File download failed.");
             }
+
+            this.remoteFileName = getOneMonthBefore();
+            remoteFilePath = "/" + remoteDirectory + "/" + remoteFileName;
+            System.out.println("File path one month before: " + remoteFilePath);
+
         } catch (IOException e) {
             e.printStackTrace();
         } finally {
@@ -147,20 +156,66 @@ public class FtpController {
 
     }
 
-    public void getNextDay(String str) {
-        this.remoteFileName = "mt" + str + ".mtd";
+    @Scheduled(cron = "0 1 00 * * *") // Runs at one minute after midnight (00:01) every day
+    public void deleteFileAtMidnight() {
+
+        String server = "144.122.31.54";
+        int port = 21;
+        String username = "data_admin";
+        String password = "da_xrd3200";
+
+        //this.remoteFileName = getOneMonthBefore();
+        this.remoteFileName = "mt01012016.mtd";
+
+        String remoteFilePath = "/" + remoteDirectory + "/" + remoteFileName;
+        System.out.println("File path one month before: " + remoteFilePath);
+        String localFilePath = DOWNLOAD_FOLDER + remoteFileName;
+
+        try {
+            // Connect to the FTP server and login
+            ftpClient.connect(server, port);
+            ftpClient.login(username, password);
+            ftpClient.enterLocalPassiveMode();
+
+            boolean success = ftpClient.deleteFile(remoteFilePath);;
+
+            if (success) {
+                System.out.println("File deleted successfully.");
+            } else {
+                System.out.println("File deletion failed: File does not exist.");
+            }
+
+        } catch (IOException e) {
+            System.out.println("File deletion failed: " + e.getMessage());
+        } finally {
+            // Disconnect from the FTP server
+            try {
+                ftpClient.disconnect();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
     }
 
+    public String getYesterdaysDate() {
+        LocalDate today = LocalDate.now();
+        LocalDate yesterday = today.minusDays(1);
 
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMddyyyy");
+        String formattedYesterday = "mt" + yesterday.format(formatter) + ".mtd";
 
+        return formattedYesterday;
+    }
 
+    public String getOneMonthBefore() {
+        LocalDate today = LocalDate.now();
+        LocalDate oneMonthBefore = today.minusMonths(1);
 
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMddyyyy");
+        String formattedOneMonthBefore = "mt" + oneMonthBefore.format(formatter) + ".mtd";
 
-
-
-
-
-
-
+        return formattedOneMonthBefore;
+    }
 
 }
