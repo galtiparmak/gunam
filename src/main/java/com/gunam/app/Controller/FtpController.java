@@ -8,13 +8,14 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import javax.annotation.PostConstruct;
-import java.io.FileOutputStream;
-import java.io.IOException;
+import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.Arrays;
+import java.util.Comparator;
 
 @Component
 @EnableScheduling
@@ -39,7 +40,7 @@ public class FtpController {
         this.remoteDirectory = remoteDirectory;
     }
 
-    @PostConstruct
+    //@PostConstruct
     public void downloadFilesInDirectory() {
         String server = "144.122.31.54";
         int port = 21;
@@ -59,6 +60,14 @@ public class FtpController {
             // List the files in the directory
             FTPFile[] files = ftpClient.listFiles();
 
+            // Sort the files based on the filename's date part (in the format "mtMMddyyyy.mtd")
+            Arrays.sort(files, Comparator.comparing(FTPFile::getName, (name1, name2) -> {
+                String datePart1 = name1.substring(2, 10);
+                String datePart2 = name2.substring(2, 10);
+                return LocalDate.parse(datePart1, DateTimeFormatter.ofPattern("MMddyyyy"))
+                        .compareTo(LocalDate.parse(datePart2, DateTimeFormatter.ofPattern("MMddyyyy")));
+            }));
+
             // Download each file in the directory
             for (FTPFile file : files) {
                 if (file.isFile()) {
@@ -69,7 +78,8 @@ public class FtpController {
                 }
             }
         } catch (IOException e) {
-            e.printStackTrace();
+            //e.printStackTrace();
+            System.out.println("Error on file: " + remoteFileName);
         } finally {
             // Disconnect from the FTP server
             try {
@@ -217,5 +227,18 @@ public class FtpController {
 
         return formattedOneMonthBefore;
     }
+
+    private boolean isFirstLineContainsDate() {
+        try (InputStream inputStream = ftpClient.retrieveFileStream(remoteFileName);
+             BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream))) {
+            String firstLine = reader.readLine();
+            return firstLine != null && firstLine.startsWith("Date");
+        } catch (IOException e) {
+            // Handle any exception while reading the first line here
+            System.out.println("Error reading file " + remoteFileName + ": " + e.getMessage());
+            return false; // Return false if an exception occurs
+        }
+    }
+
 
 }

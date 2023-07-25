@@ -1,5 +1,6 @@
 package com.gunam.app;
 
+import com.gunam.app.Configuration.CorsConfig;
 import com.gunam.app.Controller.FtpController;
 import com.gunam.app.Controller.MTDFileController;
 import org.springframework.boot.SpringApplication;
@@ -19,7 +20,7 @@ public class AppApplication {
 		ConfigurableApplicationContext context = SpringApplication.run(AppApplication.class, args);
 		FtpController ftpController = context.getBean(FtpController.class);
 		//ftpController.downloadFilesInDirectory();
-		ftpController.downloadFileAtMidnight();
+		//ftpController.downloadFileAtMidnight();
 
 		//context.close();
 	}
