@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.gunam.app.Entity.Admin;
 import jakarta.validation.Valid;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.web.bind.annotation.*;
 
@@ -12,8 +13,15 @@ import java.util.Collection;
 import java.util.List;
 import java.util.NoSuchElementException;
 
+@RestController
+@RequestMapping("/api")
 public class AdminController {
     private JdbcTemplate jdbcTemplate;
+
+    @Autowired
+    public AdminController(JdbcTemplate jdbcTemplate) {
+        this.jdbcTemplate = jdbcTemplate;
+    }
 
     @GetMapping("/admins")
     Collection<Admin> admins() {
@@ -120,7 +128,7 @@ public class AdminController {
                 password
         );
     }
-    @PutMapping("/admin/{id}")
+    @PutMapping("/update/admin/{id}")
     void updateAdmin(@PathVariable Long id, @Valid @RequestBody String jsonPayload) throws JsonProcessingException{
         ObjectMapper objectMapper = new ObjectMapper();
         JsonNode jsonNode = objectMapper.readTree(jsonPayload);
@@ -147,7 +155,7 @@ public class AdminController {
                 id
         );
     }
-    @PutMapping("/admin/{id}")
+    @PutMapping("/remove/admin/{id}")
     void removeAdmin(@PathVariable Long id) {
         String sql = "DELETE FROM \"admin\" WHERE admin_id = ?";
         Object[] params = {id};

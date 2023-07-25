@@ -4,6 +4,7 @@ import com.gunam.app.Entity.User;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -18,6 +19,11 @@ import java.util.NoSuchElementException;
 @RequestMapping("/api")
 public class UserController {
     private JdbcTemplate jdbcTemplate;
+
+    @Autowired
+    public UserController(JdbcTemplate jdbcTemplate) {
+        this.jdbcTemplate = jdbcTemplate;
+    }
 
     @GetMapping("/users")
     Collection<User> users() {
@@ -81,6 +87,7 @@ public class UserController {
     public User userLogin(@RequestParam String email, @RequestParam String password) {
         String sql = "SELECT * FROM \"user\" WHERE email = ? AND password = ?";
         Object[] params = {email, password};
+        System.out.println(email + " " + password);
 
         List<User> users = jdbcTemplate.query(
                 sql,
@@ -103,7 +110,7 @@ public class UserController {
             throw new NoSuchElementException("User not found with the provided email and password");
         }
         System.out.println("---LOGGED IN---");
-
+        System.out.println(users.get(0).getName());
         return users.get(0);
     }
 

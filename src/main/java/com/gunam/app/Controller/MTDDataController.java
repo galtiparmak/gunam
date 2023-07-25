@@ -15,8 +15,9 @@ public class MTDDataController {
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
-    @GetMapping("/date/{date}")
-    public List<MTDData> getDataByDate(@PathVariable String date) {
+    //http://localhost:8080/api/mtd/date?date=01%2F01%2F2016
+    @GetMapping("/date")
+    public List<MTDData> getDataByDate(@RequestParam("date") String date) {
         String sql = "SELECT * FROM mtd_table WHERE date = ?";
         Object[] params = {date};
 
@@ -34,6 +35,9 @@ public class MTDDataController {
                     for (int i = 1; i <= columnCount; i++) {
                         String columnName = metaData.getColumnName(i);
                         String columnValue = rs.getString(columnName);
+                        if (columnValue.equals("Default")) {
+                            continue;
+                        }
                         entry.addColumn(columnName, columnValue);
                     }
 
@@ -48,9 +52,9 @@ public class MTDDataController {
         return entries;
     }
 
-
-    @GetMapping("/date/{date}/time/{time}")
-    public MTDData getDataByDateAndTime(@PathVariable String date, @PathVariable String time) {
+    //http://localhost:8080/api/mtd/date/time?date=01%2F01%2F2016&time=12%3A00%3A00
+    @GetMapping("/date/time")
+    public MTDData getDataByDateAndTime(@RequestParam("date") String date, @RequestParam("time") String time) {
         String sql = "SELECT * FROM mtd_table WHERE date = ? AND time = ?";
         Object[] params = {date, time};
 
@@ -85,9 +89,10 @@ public class MTDDataController {
         return entry;
     }
 
-    @GetMapping("/dateInt/{startDate}/{endDate}")
-    public List<MTDData> getDataByDateInterval(@PathVariable String startDate, @PathVariable String endDate) {
-        String sql = "SELECT * FROM mtd_table WHERE date BETWEEN ? AND ?";
+    //http://localhost:8080/api/mtd/dateInt?startDate=01%2F01%2F2016&endDate=01%2F02%2F2016
+    @GetMapping("/dateInt")
+    public List<MTDData> getDataByDateInterval(@RequestParam("startDate") String startDate, @RequestParam("endDate") String endDate) {
+        String sql = "SELECT * FROM mtd_table WHERE date BETWEEN ? AND ? ORDER BY date";
         Object[] params = {startDate, endDate};
 
         List<MTDData> entries = jdbcTemplate.query(
@@ -119,8 +124,9 @@ public class MTDDataController {
         return entries;
     }
 
-    @GetMapping("/date/{date}/timeInt/{startTime}/{endTime}")
-    public List<MTDData> getDataByDateAndTimeInterval(@PathVariable String date, @PathVariable String startTime, @PathVariable String endTime) {
+    //http://localhost:8080/api/mtd/date/timeInt?date=01%2F01%2F2016&startTime=09%3A00%3A00&endTime=12%3A00%3A00
+    @GetMapping("/date/timeInt")
+    public List<MTDData> getDataByDateAndTimeInterval(@RequestParam("date") String date, @RequestParam("startTime") String startTime, @RequestParam("endTime") String endTime) {
         String sql = "SELECT * FROM mtd_table WHERE date = ? AND time BETWEEN ? AND ?";
         Object[] params = {date, startTime, endTime};
 
@@ -154,8 +160,9 @@ public class MTDDataController {
         return entries;
     }
 
-    @GetMapping("/date/{date}/time/{time}/column/{columnName}")
-    public String getColumnValueByDateAndTime(@PathVariable String date, @PathVariable String time, @PathVariable String columnName) {
+    //http://localhost:8080/api/mtd/date/time/column?date=01%2F01%2F2016&time=09%3A00%3A00&column=temp11
+    @GetMapping("/date/time/column")
+    public String getColumnValueByDateAndTime(@RequestParam("date") String date, @RequestParam("time") String time, @RequestParam("column") String columnName) {
         String sql = "SELECT " + columnName + " FROM mtd_table WHERE date = ? AND time = ?";
         Object[] params = {date, time};
 
@@ -167,10 +174,9 @@ public class MTDDataController {
         }
     }
 
-
-    // USAGE: GET /api/data/{date}/{time}?columnNames=column1,column2,column3
-    @GetMapping("/columnsDate/{date}/columnsTime/{time}")
-    public Map<String, String> getColumnValuesByDateAndTime(@PathVariable String date, @PathVariable String time, @RequestParam("columnNames") List<String> columnNames) {
+    //http://localhost:8080/api/mtd/columnsDate/columnsTime?date=01%2F01%2F2016&time=09%3A00%3A00&columnNames=aux1,aux2,aux3
+    @GetMapping("/columnsDate/columnsTime")
+    public Map<String, String> getColumnValuesByDateAndTime(@RequestParam("date") String date, @RequestParam("time") String time, @RequestParam("columnNames") List<String> columnNames) {
         String sql = "SELECT " + String.join(", ", columnNames) + " FROM mtd_table WHERE date = ? AND time = ?";
         Object[] params = {date, time};
 
@@ -199,28 +205,28 @@ public class MTDDataController {
         }
     }
 
-    @GetMapping("/columnDate/{date}/columnTimeInt/{startTime}/{endTime}")
-    public String getColumnValueInTimeInterval(@PathVariable String date, @PathVariable String startTime,
-                                               @PathVariable String endTime, @RequestParam String columnName) {
+    //http://localhost:8080/api/mtd/columnDate/columnTimeInt?date=01%2F01%2F2016&startTime=09%3A00%3A00&endTime=12%3A00%3A00&columnName=aux1
+    @GetMapping("/columnDate/columnTimeInt")
+    public List<String> getColumnValueInTimeInterval(@RequestParam("date") String date,
+                                                      @RequestParam("startTime") String startTime,
+                                                      @RequestParam("endTime") String endTime,
+                                                      @RequestParam String columnName) {
         String sql = "SELECT " + columnName + " FROM mtd_table WHERE date = ? AND time >= ? AND time <= ?";
         Object[] params = {date, startTime, endTime};
 
-        try {
-            String columnValue = jdbcTemplate.queryForObject(sql, params, String.class);
+        List<String> columnValues = jdbcTemplate.queryForList(sql, params, String.class);
 
-            if (columnValue == null) {
-                throw new NoSuchElementException("No data found for the specified date and time interval.");
-            }
-
-            return columnValue;
-        } catch (EmptyResultDataAccessException e) {
+        if (columnValues.isEmpty()) {
             throw new NoSuchElementException("No data found for the specified date and time interval.");
         }
+
+        return columnValues;
     }
 
-    @GetMapping("/columnsDate/{date}/columnsTimeInt{startTime}/{endTime}")
-    public List<Map<String, String>> getColumnValuesInTimeInterval(@PathVariable String date, @PathVariable String startTime,
-                                                                   @PathVariable String endTime, @RequestParam List<String> columnNames) {
+    //http://localhost:8080/api/mtd/columnsDate/columnsTimeInt?date=01%2F01%2F2016&startTime=09%3A00%3A00&endTime=12%3A00%3A00&columnNames=aux1,aux2,aux3
+    @GetMapping("/columnsDate/columnsTimeInt")
+    public List<Map<String, String>> getColumnValuesInTimeInterval(@RequestParam("date") String date, @RequestParam("startTime") String startTime,
+                                                                   @RequestParam("endTime") String endTime, @RequestParam List<String> columnNames) {
         String sql = "SELECT " + String.join(", ", columnNames) + " FROM mtd_table WHERE date = ? AND time >= ? AND time <= ?";
         Object[] params = {date, startTime, endTime};
 
@@ -247,9 +253,9 @@ public class MTDDataController {
         }
     }
 
-    @GetMapping("/columnDateInt/{startDate}/{endDate}/columnTimeInt/{startTime}/{endTime}")
-    public String getColumnValueInDateAndTimeInterval(@PathVariable String startDate, @PathVariable String endDate,
-                                                      @PathVariable String startTime, @PathVariable String endTime,
+    @GetMapping("/columnDateInt/columnTimeInt")
+    public String getColumnValueInDateAndTimeInterval(@RequestParam("startDate") String startDate, @RequestParam("endDate") String endDate,
+                                                      @RequestParam("startTime") String startTime, @RequestParam("endTime") String endTime,
                                                       @RequestParam String columnName) {
         String sql = "SELECT " + columnName + " FROM mtd_table WHERE date >= ? AND date <= ? AND time >= ? AND time <= ?";
         Object[] params = {startDate, endDate, startTime, endTime};
@@ -267,9 +273,9 @@ public class MTDDataController {
         }
     }
 
-    @GetMapping("/columnsDateInt/{startDate}/{endDate}/columnsTimeInt{startTime}/{endTime}")
-    public List<Map<String, String>> getColumnValuesInDateTimeInterval(@PathVariable String startDate, @PathVariable String endDate,
-                                                                       @PathVariable String startTime, @PathVariable String endTime,
+    @GetMapping("/columnsDateInt/columnsTimeInt")
+    public List<Map<String, String>> getColumnValuesInDateTimeInterval(@RequestParam("startDate") String startDate, @RequestParam("endDate") String endDate,
+                                                                       @RequestParam("startTime") String startTime, @RequestParam("endTime") String endTime,
                                                                        @RequestParam String columnName) {
         String sql = "SELECT " + columnName + " FROM mtd_table WHERE date >= ? AND time >= ? AND date <= ? AND time <= ?";
         Object[] params = {startDate, startTime, endDate, endTime};

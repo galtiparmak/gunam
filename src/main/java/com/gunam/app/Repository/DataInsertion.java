@@ -25,13 +25,15 @@ public class DataInsertion {
 
         // Get the column names from the first row
         String[] columnNames = rows[0].split(",");
+        if (!columnNames[0].trim().equalsIgnoreCase("Date")) {
+            return;
+        }
         columnLen = columnNames.length;
 
         for (int i = 0; i < columnLen; i++) {
             columnNames[i] = reverseStr(columnNames[i]);
         }
 
-        //existingColumns = new HashSet<>();
         boolean tableExist = isTableExists();
 
         if (!tableExist) {
@@ -52,10 +54,9 @@ public class DataInsertion {
             jdbcTemplate.execute(createTableQuery);
         }
         else {
-            // Dynamically generate the CREATE TABLE query
             for (String columnName : columnNames) {
                 if (!existingColumns.contains(columnName)) {
-                    System.out.println(columnName);
+                    //System.out.println(columnName);
                     String updateTableQuery =  "ALTER TABLE mtd_table ADD " + columnName + " VARCHAR(255) DEFAULT 'Default';";
                     existingColumns.add(columnName);
                     jdbcTemplate.execute(updateTableQuery);
@@ -77,7 +78,7 @@ public class DataInsertion {
                 // Set values for each column
                 for (int j = 0; j < columnLen; j++) {
                     ps.setString(j + 1, columns[j]);
-                    System.out.println(columns[j]);
+                    //System.out.println(columns[j]);
                 }
             }
 
