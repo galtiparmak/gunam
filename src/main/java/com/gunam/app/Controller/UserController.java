@@ -26,7 +26,7 @@ public class UserController {
     }
 
     @GetMapping("/users")
-    Collection<User> users() {
+    public Collection<User> users() {
         List<User> users = jdbcTemplate.query(
                 "SELECT * FROM \"user\"",
                 (rs, rowNum) -> {
@@ -185,7 +185,7 @@ public class UserController {
                 id
         );
     }
-    @PutMapping("/user/remoove/{id}")
+    @PutMapping("/user/remove/{id}")
     void removeUser(@PathVariable Long id) {
         String sql = "DELETE FROM \"user\" WHERE user_id = ?";
         Object[] params = {id};

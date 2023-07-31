@@ -40,7 +40,6 @@ public class FtpController {
         this.remoteDirectory = remoteDirectory;
     }
 
-    //@PostConstruct
     public void downloadFilesInDirectory() {
         String server = "144.122.31.54";
         int port = 21;
@@ -121,8 +120,8 @@ public class FtpController {
         String username = "data_admin";
         String password = "da_xrd3200";
 
-        //this.remoteFileName = getYesterdaysDate();
-        this.remoteFileName = "mt01012016.mtd";
+        this.remoteFileName = getYesterdaysDate();
+        //this.remoteFileName = "mt01012016.mtd";
 
         String remoteFilePath = "/" + remoteDirectory + "/" + remoteFileName;
         System.out.println("File path yesterday: " + remoteFilePath);
@@ -152,6 +151,7 @@ public class FtpController {
             this.remoteFileName = getOneMonthBefore();
             remoteFilePath = "/" + remoteDirectory + "/" + remoteFileName;
             System.out.println("File path one month before: " + remoteFilePath);
+            deleteFileAtMidnight(remoteFilePath, server, port, username, password);
 
         } catch (IOException e) {
             e.printStackTrace();
@@ -166,26 +166,26 @@ public class FtpController {
 
     }
 
-    @Scheduled(cron = "0 1 00 * * *") // Runs at one minute after midnight (00:01) every day
-    public void deleteFileAtMidnight() {
+    //@Scheduled(cron = "0 1 00 * * *") // Runs at one minute after midnight (00:01) every day
+    public void deleteFileAtMidnight(String remoteFilePath, String server, int port, String username, String password) {
 
-        String server = "144.122.31.54";
-        int port = 21;
-        String username = "data_admin";
-        String password = "da_xrd3200";
+        //String server = "144.122.31.54";
+        //int port = 21;
+        //String username = "data_admin";
+        //String password = "da_xrd3200";
 
         //this.remoteFileName = getOneMonthBefore();
-        this.remoteFileName = "mt01012016.mtd";
+        //this.remoteFileName = "mt01012016.mtd";
 
-        String remoteFilePath = "/" + remoteDirectory + "/" + remoteFileName;
-        System.out.println("File path one month before: " + remoteFilePath);
-        String localFilePath = DOWNLOAD_FOLDER + remoteFileName;
+        //String remoteFilePath = "/" + remoteDirectory + "/" + remoteFileName;
+        //System.out.println("File path one month before: " + remoteFilePath);
+        //String localFilePath = DOWNLOAD_FOLDER + remoteFileName;
 
         try {
             // Connect to the FTP server and login
-            ftpClient.connect(server, port);
-            ftpClient.login(username, password);
-            ftpClient.enterLocalPassiveMode();
+            //ftpClient.connect(server, port);
+            //ftpClient.login(username, password);
+            //ftpClient.enterLocalPassiveMode();
 
             boolean success = ftpClient.deleteFile(remoteFilePath);;
 
@@ -228,17 +228,6 @@ public class FtpController {
         return formattedOneMonthBefore;
     }
 
-    private boolean isFirstLineContainsDate() {
-        try (InputStream inputStream = ftpClient.retrieveFileStream(remoteFileName);
-             BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream))) {
-            String firstLine = reader.readLine();
-            return firstLine != null && firstLine.startsWith("Date");
-        } catch (IOException e) {
-            // Handle any exception while reading the first line here
-            System.out.println("Error reading file " + remoteFileName + ": " + e.getMessage());
-            return false; // Return false if an exception occurs
-        }
-    }
 
 
 }

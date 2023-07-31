@@ -207,21 +207,32 @@ public class MTDDataController {
 
     //http://localhost:8080/api/mtd/columnDate/columnTimeInt?date=01%2F01%2F2016&startTime=09%3A00%3A00&endTime=12%3A00%3A00&columnName=aux1
     @GetMapping("/columnDate/columnTimeInt")
-    public List<String> getColumnValueInTimeInterval(@RequestParam("date") String date,
-                                                      @RequestParam("startTime") String startTime,
-                                                      @RequestParam("endTime") String endTime,
-                                                      @RequestParam String columnName) {
-        String sql = "SELECT " + columnName + " FROM mtd_table WHERE date = ? AND time >= ? AND time <= ?";
+    public Map<String, String> getColumnValueInTimeInterval(@RequestParam("date") String date,
+                                                            @RequestParam("startTime") String startTime,
+                                                            @RequestParam("endTime") String endTime,
+                                                            @RequestParam String columnName) {
+        String sql = "SELECT time, " + columnName + " FROM mtd_table WHERE date = ? AND time >= ? AND time <= ?";
         Object[] params = {date, startTime, endTime};
 
-        List<String> columnValues = jdbcTemplate.queryForList(sql, params, String.class);
+        List<Map<String, Object>> results = jdbcTemplate.queryForList(sql, params);
+        Map<String, String> columnValuesMap = new LinkedHashMap<>();
 
-        if (columnValues.isEmpty()) {
+        for (Map<String, Object> result : results) {
+            String time = (String) result.get("time");
+            String columnValue = (String) result.get(columnName);
+            columnValuesMap.put(time, columnValue);
+        }
+
+        System.out.println(date + " " + startTime + " " + endTime + " " + columnName);
+        System.out.println(columnValuesMap);
+
+        if (columnValuesMap.isEmpty()) {
             throw new NoSuchElementException("No data found for the specified date and time interval.");
         }
 
-        return columnValues;
+        return columnValuesMap;
     }
+
 
     //http://localhost:8080/api/mtd/columnsDate/columnsTimeInt?date=01%2F01%2F2016&startTime=09%3A00%3A00&endTime=12%3A00%3A00&columnNames=aux1,aux2,aux3
     @GetMapping("/columnsDate/columnsTimeInt")
