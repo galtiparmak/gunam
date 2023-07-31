@@ -8,6 +8,8 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class DataInsertion {
     private final JdbcTemplate jdbcTemplate;
@@ -74,6 +76,7 @@ public class DataInsertion {
             @Override
             public void setValues(PreparedStatement ps, int i) throws SQLException {
                 String[] columns = newRows[i].split(",");
+                convertScientificNotation(columns, columnLen);
                 System.out.println(newRows[i]);
                 // Set values for each column
                 for (int j = 0; j < columnLen; j++) {
@@ -132,6 +135,32 @@ public class DataInsertion {
         }
 
         return reversed.toString();
+    }
+
+    public void convertScientificNotation(String[] columns, int columnLen) {;
+        for (int i = 0; i < columnLen; i++) {
+            if (isScientificNotation(columns[i])) {
+                double value = Double.parseDouble(columns[i]);
+                String stringValue = String.format("%.7f", value);
+                columns[i] = stringValue;
+            }
+        }
+    }
+
+    public static boolean isScientificNotation(String input) {
+        // Regular expression to match scientific notation
+        // The pattern checks for a number followed by an optional sign (+/-),
+        // followed by the letter 'e', and then an optional exponent (another number).
+        String scientificPattern = "^[-+]?\\d*\\.?\\d+([eE][-+]?\\d+)?$";
+
+        // Create a Pattern object
+        Pattern pattern = Pattern.compile(scientificPattern);
+
+        // Create a Matcher object
+        Matcher matcher = pattern.matcher(input);
+
+        // Return true if the input matches the scientific notation pattern, false otherwise
+        return matcher.matches();
     }
 }
 

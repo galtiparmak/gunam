@@ -1,6 +1,7 @@
 package com.gunam.app.Entity;
 
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 public class MTDData {
@@ -34,7 +35,7 @@ public class MTDData {
 
     public void addColumn(String columnName, String columnValue) {
         if (columns == null) {
-            columns = new HashMap<>();
+            columns = new LinkedHashMap<>();
         }
         columns.put(columnName, columnValue);
     }
