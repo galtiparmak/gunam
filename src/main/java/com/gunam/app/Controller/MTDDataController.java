@@ -236,33 +236,41 @@ public class MTDDataController {
 
     //http://localhost:8080/api/mtd/columnsDate/columnsTimeInt?date=01%2F01%2F2016&startTime=09%3A00%3A00&endTime=12%3A00%3A00&columnNames=aux1,aux2,aux3
     @GetMapping("/columnsDate/columnsTimeInt")
-    public List<Map<String, String>> getColumnValuesInTimeInterval(@RequestParam("date") String date, @RequestParam("startTime") String startTime,
-                                                                   @RequestParam("endTime") String endTime, @RequestParam List<String> columnNames) {
-        String sql = "SELECT " + String.join(", ", columnNames) + " FROM mtd_table WHERE date = ? AND time >= ? AND time <= ?";
+    public Map<String, Map<String, String>> getColumnValuesInTimeInterval(@RequestParam("date") String date,
+                                                                          @RequestParam("startTime") String startTime,
+                                                                          @RequestParam("endTime") String endTime,
+                                                                          @RequestParam List<String> columnNames) {
+        String sql = "SELECT time, " + String.join(", ", columnNames) + " FROM mtd_table WHERE date = ? AND time >= ? AND time <= ?";
         Object[] params = {date, startTime, endTime};
 
         try {
-            List<Map<String, String>> resultList = jdbcTemplate.query(sql, params, (rs) -> {
-                List<Map<String, String>> rows = new ArrayList<>();
-                while (rs.next()) {
-                    Map<String, String> columnValues = new HashMap<>();
-                    for (String columnName : columnNames) {
-                        columnValues.put(columnName, rs.getString(columnName));
-                    }
-                    rows.add(columnValues);
-                }
-                return rows;
-            });
+            Map<String, Map<String, String>> resultMap = new LinkedHashMap<>();
+            List<Map<String, Object>> results = jdbcTemplate.queryForList(sql, params);
 
-            if (resultList.isEmpty()) {
+            for (Map<String, Object> result : results) {
+                String time = (String) result.get("time");
+                Map<String, String> columnValuesMap = new LinkedHashMap<>();
+
+                for (String columnName : columnNames) {
+                    String columnValue = (String) result.get(columnName);
+                    columnValuesMap.put(columnName, columnValue);
+                }
+
+                resultMap.put(time, columnValuesMap);
+            }
+
+            System.out.println(resultMap);
+
+            if (resultMap.isEmpty()) {
                 throw new NoSuchElementException("No data found for the specified date and time interval.");
             }
 
-            return resultList;
+            return resultMap;
         } catch (EmptyResultDataAccessException e) {
             throw new NoSuchElementException("No data found for the specified date and time interval.");
         }
     }
+
 
     @GetMapping("/columnDateInt/columnTimeInt")
     public String getColumnValueInDateAndTimeInterval(@RequestParam("startDate") String startDate, @RequestParam("endDate") String endDate,
@@ -306,6 +314,62 @@ public class MTDDataController {
         } catch (EmptyResultDataAccessException e) {
             throw new NoSuchElementException("No data found for the specified date and time interval.");
         }
+    }
+
+    @GetMapping("/columnDateInt/columnTime")
+    public Map<String, String> getColumnValuesInExactTimeAndDateInterval(@RequestParam("exactTime") String exactTime,
+                                                                         @RequestParam("startDate") String startDate,
+                                                                         @RequestParam("endDate") String endDate,
+                                                                         @RequestParam("columnName") String columnName) {
+
+        String sql = "SELECT date, " + columnName + " FROM mtd_table WHERE date >= ? AND date <= ? AND time = ?";
+        Object[] params = {startDate, endDate, exactTime};
+
+        List<Map<String, Object>> resultSet = jdbcTemplate.queryForList(sql, params);
+
+        if (resultSet.isEmpty()) {
+            throw new NoSuchElementException("No data found for the specified date and time interval.");
+        }
+
+        Map<String, String> columnValuesMap = new LinkedHashMap<>();
+
+        for (Map<String, Object> row : resultSet) {
+            String date = (String) row.get("date");
+            String columnValue = String.valueOf(row.get(columnName));
+            columnValuesMap.put(date, columnValue);
+        }
+
+        return columnValuesMap;
+    }
+
+    @GetMapping("/columnsDateInt/columnsTime")
+    public Map<String, Map<String, String>> getColumnValuesInExactTimeAndDateInterval(@RequestParam("exactTime") String exactTime,
+                                                                                      @RequestParam("startDate") String startDate,
+                                                                                      @RequestParam("endDate") String endDate,
+                                                                                      @RequestParam List<String> columnNames) {
+
+        String sql = "SELECT date, " + String.join(", ", columnNames) + " FROM mtd_table WHERE TO_DATE(date, 'MM/DD/YYYY') >= TO_DATE(?, 'MM/DD/YYYY') AND TO_DATE(date, 'MM/DD/YYYY') <= TO_DATE(?, 'MM/DD/YYYY') AND time = ?";
+        Object[] params = {startDate, endDate, exactTime};
+
+        List<Map<String, Object>> resultSet = jdbcTemplate.queryForList(sql, params);
+
+        if (resultSet.isEmpty()) {
+            throw new NoSuchElementException("No data found for the specified date and time interval.");
+        }
+
+        Map<String, Map<String, String>> columnValuesMap = new LinkedHashMap<>();
+
+        for (Map<String, Object> row : resultSet) {
+            String date = (String) row.get("date");
+            Map<String, String> columnValues = new HashMap<>();
+            for (String columnName : columnNames) {
+                String columnValue = String.valueOf(row.get(columnName));
+                columnValues.put(columnName, columnValue);
+            }
+            columnValuesMap.put(date, columnValues);
+        }
+
+        return columnValuesMap;
     }
 
 
